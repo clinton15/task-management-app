@@ -299,14 +299,22 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           title: taskTitle.trim(),
           description: taskDescription.trim(),
           assignedTo: newAssignedTo || null,
-        },
+        }
       );
 
-      setTasks((currentTasks) =>
-        [...currentTasks, response.data].sort(
-          (a, b) => (a.order ?? 0) - (b.order ?? 0),
-        ),
-      );
+      setTasks((currentTasks) => {
+        const taskAlreadyExists = currentTasks.some(
+          (task) => task._id === response.data._id
+        );
+
+        if (taskAlreadyExists) {
+          return currentTasks;
+        }
+
+        return [...currentTasks, response.data].sort(
+          (a, b) => (a.order ?? 0) - (b.order ?? 0)
+        );
+      });
 
       setTaskTitle("");
       setTaskDescription("");
