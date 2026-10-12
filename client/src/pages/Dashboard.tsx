@@ -39,6 +39,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [newAssignedTo, setNewAssignedTo] = useState("");
   const [creatingProject, setCreatingProject] = useState(false);
+  const [savingMembers, setSavingMembers] = useState(false);
+  const [memberError, setMemberError] = useState("");
+  const [memberSuccess, setMemberSuccess] = useState("");
 
   const isAdmin = user.role.toLowerCase() === "admin";
 
@@ -404,6 +407,43 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }
   }
 
+  async function handleSaveMembers(memberIds: string[]): Promise<void> {
+    if (!selectedProjectId) {
+      setMemberError("Please select a project first.");
+      return;
+    }
+
+    try {
+      setSavingMembers(true);
+      setMemberError("");
+      setMemberSuccess("");
+
+      const response = await api.put<Project>(
+        `/projects/${selectedProjectId}`,
+        { members: memberIds }
+      );
+
+      const updatedProject = response.data;
+
+      setProjects((currentProjects) =>
+        currentProjects.map((project) =>
+          project._id === updatedProject._id
+            ? updatedProject
+            : project
+        )
+      );
+
+      setMemberSuccess("Project members updated successfully.");
+    } catch (error) {
+      console.error("Failed to update project members:", error);
+      setMemberError(
+        getErrorMessage(error, "Unable to update project members.")
+      );
+    } finally {
+      setSavingMembers(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Header */}
@@ -429,6 +469,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           creatingProject={creatingProject}
           onCreateProject={handleCreateProject}
           onProjectChange={setSelectedProjectId}
+          users={users}
+          savingMembers={savingMembers}
+          memberError={memberError}
+          memberSuccess={memberSuccess}
+          onSaveMembers={handleSaveMembers}
         />
 
         {/* Create task */}
