@@ -38,6 +38,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const [users, setUsers] = useState<User[]>([]);
   const [newAssignedTo, setNewAssignedTo] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
 
   const isAdmin = user.role.toLowerCase() === "admin";
 
@@ -125,6 +126,37 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       cancelled = true;
     };
   }, []);
+
+  async function handleCreateProject(name: string): Promise<void> {
+    try {
+      setCreatingProject(true);
+      setProjectError("");
+
+      const response = await api.post<Project>("/projects", {
+        name,
+        members: [],
+      });
+
+      const newProject = response.data;
+
+      setProjects((currentProjects) => [
+        newProject,
+        ...currentProjects.filter(
+          (project) => project._id !== newProject._id,
+        ),
+      ]);
+
+      setSelectedProjectId(newProject._id);
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      setProjectError(
+        getErrorMessage(error, "Unable to create project."),
+      );
+      throw error;
+    } finally {
+      setCreatingProject(false);
+    }
+  }
 
   //Load users
   useEffect(() => {
@@ -393,6 +425,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           selectedProject={selectedProject}
           loadingProjects={loadingProjects}
           projectError={projectError}
+          isAdmin={isAdmin}
+          creatingProject={creatingProject}
+          onCreateProject={handleCreateProject}
           onProjectChange={setSelectedProjectId}
         />
 
